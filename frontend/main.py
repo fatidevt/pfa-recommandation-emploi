@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from dotenv import load_dotenv
 from jsearch import fetch_jobs
 
-load_dotenv(dotenv_path="../.env")
+load_dotenv()
 
 app = FastAPI()
 
