@@ -3,9 +3,9 @@ import json
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
-
-API_KEY = os.getenv("JSEARCH_API_KEY")
+load_dotenv(dotenv_path="../.env")
+load_dotenv(dotenv_path=".env")
+API_KEY = "2af6b8e0damshb0af1f76cb00d04p18b3f9jsn22341615aba2"
 
 def fetch_jobs(query="developer", location="Morocco", num_pages=1):
     """
@@ -30,10 +30,10 @@ def fetch_jobs(query="developer", location="Morocco", num_pages=1):
 
     for page in range(1, num_pages + 1):
         params = {
-            "query": f"{query} in {location}",
+            "query": f"{query}",
             "page": str(page),
             "num_pages": "1",
-            "country": "ma"  # Morocco country code
+            "country": "us"  # Morocco country code
         }
 
         response = requests.get(url, headers=headers, params=params)
