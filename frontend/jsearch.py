@@ -8,7 +8,7 @@ load_dotenv(dotenv_path=Path(__file__).parent / ".env")
 
 API_KEY = os.getenv("JSEARCH_API_KEY")
 
-def fetch_jobs(query="developer", location="Morocco", num_pages=1):
+def fetch_jobs(query="developer", location="Morocco", num_pages=3):
     """
     Fetch job offers from JSearch API.
     

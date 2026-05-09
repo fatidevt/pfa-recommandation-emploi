@@ -1,5 +1,6 @@
 import streamlit as st
 import requests
+from datetime import datetime
 
 st.set_page_config(
     page_title="Morocco Job Finder",
@@ -10,6 +11,13 @@ st.set_page_config(
 st.title("💼 Morocco Job Finder")
 st.markdown("Find the latest job offers in Morocco powered by JSearch API")
 st.divider()
+
+# --- Helper ---
+def format_date(raw: str) -> str:
+    try:
+        return datetime.strptime(raw[:10], "%Y-%m-%d").strftime("%d %b %Y")
+    except:
+        return "N/A"
 
 # --- Formulaire enrichi ---
 col1, col2 = st.columns(2)
@@ -57,15 +65,18 @@ if search_btn and query:
                 with col_a:
                     st.subheader(f"#{i+1} {job.get('job_title', 'N/A')}")
                     st.markdown(f"🏢 **{job.get('employer_name', 'Unknown')}**")
-                    st.markdown(f"📍 {job.get('job_location', 'N/A')}")
-                    st.markdown(f"🕒 {job.get('job_employment_type', 'N/A')}  |  📅 {job.get('job_posted_at', 'N/A')}")
+                    st.markdown(f"📍 {job.get('job_city', '') or job.get('job_location', 'N/A')}")
+
+                    # ✅ FIXED: correct field name + safe date formatting
+                    posted_date = format_date(job.get('job_posted_at_datetime_utc') or '')
+                    st.markdown(f"🕒 {job.get('job_employment_type', 'N/A')}  |  📅 {posted_date}")
 
                     # Score de matching
                     score = job.get("matching_score", 0)
 
-                    if score >= 10:
+                    if score >= 60:
                         color = "🟢"
-                    elif score >= 5:
+                    elif score >= 30:
                         color = "🟡"
                     else:
                         color = "🔴"
