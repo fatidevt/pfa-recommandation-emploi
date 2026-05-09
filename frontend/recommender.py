@@ -7,7 +7,7 @@ def recommend(profil: str, offres: list, top_n: int = 10):
     et retourne le Top-10 trié par score.
     
     Args:
-        profil: compétences de l'utilisateur ex: "python django fastapi"
+        profil: texte complet du profil utilisateur
         offres: liste d'offres de JSearch
         top_n: nombre d'offres à retourner
     

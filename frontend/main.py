@@ -8,28 +8,30 @@ import os
 
 load_dotenv(dotenv_path=Path(__file__).parent / ".env")
 
-# Debug - vérifie la clé
-print("CLE API:", os.getenv("JSEARCH_API_KEY"))
-
 app = FastAPI()
 
 class Profil(BaseModel):
     competences: str
+    experience: str = ""
+    formation: str = ""
     location: str = "Morocco"
 
 @app.post("/recommandations")
 def get_recommandations(profil: Profil):
     
+    # Combine toutes les infos en un seul texte
+    profil_complet = f"{profil.competences} {profil.experience} {profil.formation}"
+    
+    # Récupère les offres JSearch
     jobs = fetch_jobs(
         query=profil.competences,
         location=profil.location,
         num_pages=2
     )
     
-    print("Nombre offres récupérées:", len(jobs))
-    
+    # Passe dans recommender avec le profil complet
     top10 = recommend(
-        profil=profil.competences,
+        profil=profil_complet,
         offres=jobs,
         top_n=10
     )
