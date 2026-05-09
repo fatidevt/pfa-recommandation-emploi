@@ -1,24 +1,14 @@
 import requests
 import json
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(dotenv_path=Path(__file__).parent / ".env")
 
 API_KEY = os.getenv("JSEARCH_API_KEY")
 
 def fetch_jobs(query="developer", location="Morocco", num_pages=1):
-    """
-    Fetch job offers from JSearch API.
-    
-    Args:
-        query (str): Job title or keywords
-        location (str): Job location
-        num_pages (int): Number of result pages to fetch
-    
-    Returns:
-        list: List of job offers in JSON format
-    """
     url = "https://jsearch.p.rapidapi.com/search"
 
     headers = {
@@ -33,7 +23,7 @@ def fetch_jobs(query="developer", location="Morocco", num_pages=1):
             "query": f"{query} in {location}",
             "page": str(page),
             "num_pages": "1",
-            "country": "ma"  # Morocco country code
+            "country": "ma"
         }
 
         response = requests.get(url, headers=headers, params=params)
@@ -48,25 +38,3 @@ def fetch_jobs(query="developer", location="Morocco", num_pages=1):
             break
 
     return all_jobs
-
-
-def save_jobs_to_json(jobs, filename="jobs.json"):
-    """Save jobs list to a JSON file."""
-    with open(filename, "w", encoding="utf-8") as f:
-        json.dump(jobs, f, ensure_ascii=False, indent=2)
-    print(f"💾 {len(jobs)} jobs saved to {filename}")
-
-
-if __name__ == "__main__":
-    # Example: fetch developer jobs in Morocco
-    jobs = fetch_jobs(query="software developer", location="Morocco", num_pages=2)
-
-    if jobs:
-        # Print first job as sample
-        print("\n📋 Sample job:")
-        print(json.dumps(jobs[0], indent=2))
-
-        # Save all jobs to file
-        save_jobs_to_json(jobs)
-    else:
-        print("No jobs found.")
