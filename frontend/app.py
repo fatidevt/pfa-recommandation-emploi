@@ -1,6 +1,5 @@
 import streamlit as st
 import requests
-from datetime import datetime
 
 st.set_page_config(
     page_title="Morocco Job Finder",
@@ -54,7 +53,7 @@ def afficher_offres(jobs):
         lieu = job.get('job_city') or job.get('job_location') or job.get('lieu', 'N/A')
         lien = job.get('job_apply_link') or job.get('lien', '#')
         description = job.get('job_description') or job.get('description', '')
-        score = round(job.get("matching_score", 0), 1)
+        score = round(job.get("score_matching", 0), 1)
         if score >= 60:
             badge = f'<span class="score-badge-green">🟢 {score}% match</span>'
         elif score >= 30:

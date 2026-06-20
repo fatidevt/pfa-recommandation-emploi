@@ -1,81 +1,90 @@
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, HTTPException
 from pydantic import BaseModel
+from pathlib import Path
 from dotenv import load_dotenv
 from jsearch import fetch_jobs
 from recommender import calculer_scores
 from Extractor import extract_profile_from_cv
 import tempfile
+import pandas as pd
 import os
 
-load_dotenv(dotenv_path="../.env")
+load_dotenv(dotenv_path=Path(__file__).parent / ".env")
 
-app = FastAPI(
-    title="PFA Recommandation Emploi",
-    description="Systeme de recommandation avec JSearch + TF-IDF",
-    version="3.0"
-)
+app = FastAPI()
 
-# Semaine 1
-@app.get("/offres")
-def get_offres(competences: str, location: str = "Morocco"):
-    jobs = fetch_jobs(query=competences, location=location, num_pages=1)
-    return {"total": len(jobs), "offres": jobs}
-
-# Semaine 2
 class Profil(BaseModel):
     competences: str
     experience: str = ""
     formation: str = ""
     location: str = "Morocco"
 
+def fetch_jobs_safe(query: str, location: str, num_pages: int) -> list:
+    try:
+        jobs = fetch_jobs(query=query, location=location, num_pages=num_pages)
+        if not jobs:
+            raise ValueError("Aucune offre retournée")
+        return jobs
+    except Exception:
+        csv_path = Path(__file__).parent / "offres_backup.csv"
+        if not csv_path.exists():
+            raise HTTPException(503, "JSearch indisponible et aucun fichier backup trouvé")
+        df = pd.read_csv(csv_path, encoding="utf-8")
+        offres = []
+        for _, row in df.iterrows():
+            offres.append({
+                "job_title": row.get("titre", ""),
+                "job_description": row.get("description", ""),
+                "employer_name": row.get("entreprise", ""),
+                "job_apply_link": row.get("lien", "#"),
+                "job_location": row.get("lieu", ""),
+                "job_city": row.get("lieu", ""),
+                "job_employment_type": "N/A"
+            })
+        return offres
+
 @app.post("/recommandations")
 def get_recommandations(profil: Profil):
-    print(f"Profil recu: {profil}")
-    offres = fetch_jobs(
-        query=profil.competences,
-        location=profil.location,
-        num_pages=1
-    )
-    print(f"Offres recues: {len(offres)}")
-    resultats = calculer_scores(profil.dict(), offres)
-    print(f"Resultats: {len(resultats)}")
-    return {
-        "total": len(resultats),
-        "profil": profil.dict(),
-        "recommandations": resultats
-    }
-
-# Semaine 3
-@app.post("/upload-cv")
-async def upload_cv(file: UploadFile = File(...), location: str = "Morocco"):
-    print(f"CV recu: {file.filename}")
-
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-        content = await file.read()
-        tmp.write(content)
-        tmp_path = tmp.name
-
     try:
-        texte_extrait = extract_profile_from_cv(tmp_path)
-        print(f"Texte extrait ({len(texte_extrait)} caracteres)")
+        profil_complet = f"{profil.competences} {profil.experience} {profil.formation}"
+        jobs = fetch_jobs_safe(query=profil.competences, location=profil.location, num_pages=2)
+        profil_dict = {"competences": profil_complet, "experience": "", "formation": ""}
+        top10 = calculer_scores(profil=profil_dict, offres=jobs)
+        return {"total": len(top10), "recommandations": top10}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(500, f"Erreur serveur : {str(e)}")
 
-        if not texte_extrait or len(texte_extrait) < 10:
-            query = "data scientist python machine learning"
-            texte_extrait = query
-        else:
-            query = texte_extrait[:200]
-
-        offres = fetch_jobs(query=query, location=location, num_pages=1)
-        print(f"Offres recues: {len(offres)}")
-
-        profil = {"competences": texte_extrait, "experience": "", "formation": ""}
-        resultats = calculer_scores(profil, offres)
-
-        return {
-            "total": len(resultats),
-            "texte_extrait": texte_extrait[:500],
-            "recommandations": resultats
-        }
-
+@app.post("/upload-cv")
+async def upload_cv(fichier: UploadFile = File(...), location: str = "Morocco"):
+    if not fichier.filename.endswith(".pdf"):
+        raise HTTPException(400, "Seuls les fichiers PDF sont acceptés")
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+        tmp.write(await fichier.read())
+        tmp_path = tmp.name
+    try:
+        texte = extract_profile_from_cv(tmp_path)
+        if not texte or len(texte.strip()) < 50:
+            raise HTTPException(422, "Impossible d'extraire le texte du PDF")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(500, f"Erreur extraction PDF : {str(e)}")
     finally:
         os.unlink(tmp_path)
+    try:
+        jobs = fetch_jobs_safe(query=texte[:200], location=location, num_pages=2)
+        profil_dict = {"competences": texte, "experience": "", "formation": ""}
+        top10 = calculer_scores(profil=profil_dict, offres=jobs)
+        return {
+            "cv_apercu": texte[:2000],
+            "num_pages": 1,
+            "word_count": len(texte.split()),
+            "total": len(top10),
+            "recommandations": top10
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(500, f"Erreur recommandation : {str(e)}")
