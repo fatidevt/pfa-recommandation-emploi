@@ -19,6 +19,19 @@ class Profil(BaseModel):
     formation: str = ""
     location: str = "Morocco"
 
+def extraire_mots_cles(texte: str) -> str:
+    texte_lower = texte.lower()
+    if any(mot in texte_lower for mot in ["cisco", "vlan", "routeur", "switch", "dhcp", "dns"]):
+        return "technicien reseaux Maroc"
+    elif any(mot in texte_lower for mot in ["windows server", "active directory", "vmware"]):
+        return "administrateur systemes Maroc"
+    elif any(mot in texte_lower for mot in ["python", "django", "react", "javascript"]):
+        return "developpeur python Maroc"
+    elif any(mot in texte_lower for mot in ["linux", "infrastructure", "devops"]):
+        return "ingenieur infrastructure Maroc"
+    else:
+        return "technicien informatique Maroc"
+
 def fetch_jobs_safe(query: str, location: str, num_pages: int) -> list:
     try:
         jobs = fetch_jobs(query=query, location=location, num_pages=num_pages)
@@ -74,7 +87,9 @@ async def upload_cv(fichier: UploadFile = File(...), location: str = "Morocco"):
     finally:
         os.unlink(tmp_path)
     try:
-        jobs = fetch_jobs_safe(query=texte[:200], location=location, num_pages=2)
+        query = extraire_mots_cles(texte)
+        print(f"Query extraite: {query}")
+        jobs = fetch_jobs_safe(query=query, location=location, num_pages=2)
         profil_dict = {"competences": texte, "experience": "", "formation": ""}
         top10 = calculer_scores(profil=profil_dict, offres=jobs)
         return {
