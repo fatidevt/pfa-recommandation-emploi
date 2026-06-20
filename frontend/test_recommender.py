@@ -1,34 +1,39 @@
-from recommender import recommend
+from recommender import calculer_scores
 
-# Fake jobs
-fake_jobs = [
+# Profil fictif du candidat
+profil = {
+    "competences": "python django rest api sql postgresql",
+    "experience": "2 ans développeur backend",
+    "formation": "master informatique"
+}
+
+# Offres fictives (simulant JSearch)
+offres = [
     {
-        "job_title": "Python Developer",
-        "job_description": "We need a Python developer with Django, REST API, PostgreSQL and experience in backend development.",
-        "employer_name": "TechCorp",
-        "job_employment_type": "FULLTIME",
-        "job_city": "Casablanca",
+        "job_title": "Python Django Developer",
+        "job_description": "We need a python developer with django rest api and sql skills",
+        "employer_name": "TechCorp"
     },
     {
-        "job_title": "Data Scientist",
-        "job_description": "Looking for a data scientist with Python, pandas, scikit-learn, machine learning and TensorFlow.",
-        "employer_name": "DataLab",
-        "job_employment_type": "FULLTIME",
-        "job_city": "Rabat",
+        "job_title": "Java Spring Developer",
+        "job_description": "Java spring boot microservices developer needed",
+        "employer_name": "JavaCorp"
     },
     {
-        "job_title": "Graphic Designer",
-        "job_description": "Create visual content using Photoshop, Illustrator and Figma for marketing campaigns.",
-        "employer_name": "CreativeStudio",
-        "job_employment_type": "PARTTIME",
-        "job_city": "Marrakech",
+        "job_title": "Data Scientist Python",
+        "job_description": "Python machine learning pandas numpy scikit-learn sql",
+        "employer_name": "DataCorp"
     },
+    {
+        "job_title": "Frontend React Developer",
+        "job_description": "React javascript html css frontend developer",
+        "employer_name": "WebCorp"
+    }
 ]
 
-profile = "python django REST API backend developer"
-results = recommend(profile, fake_jobs, top_n=3)
+# Lancer le test
+resultats = calculer_scores(profil, offres)
 
-print(f"\n{'Rank':<5} {'Score':<10} {'Job Title':<25} {'Company'}")
-print("-" * 60)
-for i, job in enumerate(results, 1):
-    print(f"{i:<5} {job['matching_score']:<10} {job['job_title']:<25} {job['employer_name']}")
+print("=== Résultats de matching ===")
+for offre in resultats:
+    print(f"{offre['score_matching']}% — {offre['job_title']} chez {offre['employer_name']}")
