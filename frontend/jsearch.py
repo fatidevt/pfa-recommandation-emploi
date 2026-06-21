@@ -1,24 +1,31 @@
 import requests
 import json
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv(dotenv_path="../.env")
-load_dotenv(dotenv_path=".env")
-API_KEY = "2af6b8e0damshb0af1f76cb00d04p18b3f9jsn22341615aba2"
+load_dotenv(dotenv_path=Path(__file__).resolve().parent.parent / ".env")
+API_KEY = os.getenv("JSEARCH_API_KEY")
+
 
 def fetch_jobs(query="developer", location="Morocco", num_pages=1):
     """
     Fetch job offers from JSearch API.
-    
+
     Args:
         query (str): Job title or keywords
         location (str): Job location
         num_pages (int): Number of result pages to fetch
-    
+
     Returns:
         list: List of job offers in JSON format
     """
+    if not API_KEY:
+        raise ValueError(
+            "JSEARCH_API_KEY introuvable. Verifiez que le fichier .env existe "
+            "a la racine du projet et contient JSEARCH_API_KEY=votre_cle"
+        )
+
     url = "https://jsearch.p.rapidapi.com/search"
 
     headers = {
@@ -30,10 +37,10 @@ def fetch_jobs(query="developer", location="Morocco", num_pages=1):
 
     for page in range(1, num_pages + 1):
         params = {
-            "query": f"{query}",
+            "query": f"{query} {location}",
             "page": str(page),
             "num_pages": "1",
-            "country": "us"  # Morocco country code
+            "country": "ma"  # Maroc
         }
 
         response = requests.get(url, headers=headers, params=params)
@@ -42,9 +49,9 @@ def fetch_jobs(query="developer", location="Morocco", num_pages=1):
             data = response.json()
             jobs = data.get("data", [])
             all_jobs.extend(jobs)
-            print(f"✅ Page {page}: {len(jobs)} jobs fetched")
+            print(f"Page {page}: {len(jobs)} jobs fetched")
         else:
-            print(f"❌ Error on page {page}: {response.status_code} - {response.text}")
+            print(f"Error on page {page}: {response.status_code} - {response.text}")
             break
 
     return all_jobs
@@ -54,19 +61,15 @@ def save_jobs_to_json(jobs, filename="jobs.json"):
     """Save jobs list to a JSON file."""
     with open(filename, "w", encoding="utf-8") as f:
         json.dump(jobs, f, ensure_ascii=False, indent=2)
-    print(f"💾 {len(jobs)} jobs saved to {filename}")
+    print(f"{len(jobs)} jobs saved to {filename}")
 
 
 if __name__ == "__main__":
-    # Example: fetch developer jobs in Morocco
     jobs = fetch_jobs(query="software developer", location="Morocco", num_pages=2)
 
     if jobs:
-        # Print first job as sample
-        print("\n📋 Sample job:")
+        print("\nSample job:")
         print(json.dumps(jobs[0], indent=2))
-
-        # Save all jobs to file
         save_jobs_to_json(jobs)
     else:
         print("No jobs found.")

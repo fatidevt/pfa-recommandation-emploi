@@ -9,7 +9,8 @@ import tempfile
 import pandas as pd
 import os
 
-load_dotenv(dotenv_path=Path(__file__).parent / ".env")
+load_dotenv(dotenv_path=Path(__file__).parent.parent / ".env")
+
 
 app = FastAPI()
 
